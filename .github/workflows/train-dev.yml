@@ -51,7 +51,7 @@ jobs:
           echo "resource_group=$RG_NAME" >> "$GITHUB_OUTPUT"
           echo "workspace=$WS_NAME" >> "$GITHUB_OUTPUT"
 
-      - name: Run training job in dev and capture logs
+      - name: Run training job in dev
         id: train
         run: |
           JOB_NAME="diabetes-train-dev-${{ github.run_id }}"
@@ -60,18 +60,24 @@ jobs:
             -f src/job.yml \
             --name "$JOB_NAME" \
             --set inputs.training_data.path=azureml:diabetes-dev-folder@latest \
-            --stream | tee training_output.log
+            --stream
+          echo "job_name=$JOB_NAME" >> "$GITHUB_OUTPUT"
 
-      - name: Extract dev metrics from logs
+      - name: Extract dev metrics from job
         id: parse-metrics
         run: |
-          if [ ! -f training_output.log ]; then
-            echo "No training_output.log found to parse metrics." >&2
-            exit 1
+          JOB_NAME="${{ steps.train.outputs.job_name }}"
+          az ml job download --name "$JOB_NAME" --download-path ./job-output --all
+
+          LOG_FILE=$(find ./job-output -name "std_log.txt" | head -n 1)
+          if [ -z "$LOG_FILE" ]; then
+            echo "std_log.txt not found in downloaded job output." >&2
+          else
+            cat "$LOG_FILE"
           fi
 
-          ACC=$(grep -oP 'Accuracy:\s*\K[0-9.]+' training_output.log | tail -n 1) || true
-          AUC=$(grep -oP 'AUC:\s*\K[0-9.]+' training_output.log | tail -n 1) || true
+          ACC=$(grep -oP 'Accuracy:\s*\K[0-9.]+' "$LOG_FILE" 2>/dev/null | tail -n 1) || true
+          AUC=$(grep -oP 'AUC:\s*\K[0-9.]+' "$LOG_FILE" 2>/dev/null | tail -n 1) || true
 
           echo "Dev accuracy: $ACC"
           echo "Dev AUC: $AUC"
