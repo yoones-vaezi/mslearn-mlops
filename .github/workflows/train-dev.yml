@@ -70,8 +70,8 @@ jobs:
             exit 1
           fi
 
-          ACC=$(grep -o "Accuracy: .*" training_output.log | tail -n 1 | awk '{print $2}') || true
-          AUC=$(grep -o "AUC: .*" training_output.log | tail -n 1 | awk '{print $2}') || true
+          ACC=$(grep -oP 'Accuracy:\s*\K[0-9.]+' training_output.log | tail -n 1) || true
+          AUC=$(grep -oP 'AUC:\s*\K[0-9.]+' training_output.log | tail -n 1) || true
 
           echo "Dev accuracy: $ACC"
           echo "Dev AUC: $AUC"
