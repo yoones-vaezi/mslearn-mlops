@@ -8,6 +8,7 @@ dependencies:
     - scikit-learn==0.24.1
     - azureml-inference-server-http
     - azureml-ai-monitoring
+    - azureml-defaults
     - numpy
     - pandas
 name: diabetes-deploy-env
